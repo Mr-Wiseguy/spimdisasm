@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
+from typing import Final
 
 import argparse
 import dataclasses
@@ -82,15 +83,15 @@ archLevelOptions = {
 }
 
 class ArchLevel(OrderedEnum):
-    MIPS1       = 1
-    MIPS2       = 2
-    MIPS3       = 3
-    MIPS4       = 4
-    MIPS5       = 5
-    MIPS32      = 6
-    MIPS64      = 7
-    MIPS32R2    = 8
-    MIPS64R2    = 9
+    MIPS1: Final[int]       = 1
+    MIPS2: Final[int]       = 2
+    MIPS3: Final[int]       = 3
+    MIPS4: Final[int]       = 4
+    MIPS5: Final[int]       = 5
+    MIPS32: Final[int]      = 6
+    MIPS64: Final[int]      = 7
+    MIPS32R2: Final[int]    = 8
+    MIPS64R2: Final[int]    = 9
 
     @staticmethod
     def fromValue(value) -> ArchLevel|None:

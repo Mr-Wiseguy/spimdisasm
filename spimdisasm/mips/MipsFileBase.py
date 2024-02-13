@@ -9,13 +9,14 @@ import sys
 from typing import TextIO
 from pathlib import Path
 
-from .. import common
+from ..common import *
+from ..common import Utils
 
 from . import symbols
 
 
-class FileBase(common.ElementBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, vram: int, filename: str, words: list[int], sectionType: common.FileSectionType, segmentVromStart: int, overlayCategory: str|None):
+class FileBase(ElementBase):
+    def __init__(self, context: Context, vromStart: int, vromEnd: int, vram: int, filename: str, words: list[int], sectionType: FileSectionType, segmentVromStart: int, overlayCategory: str|None):
         super().__init__(context, vromStart, vromEnd, 0, vram, filename, words, sectionType, segmentVromStart, overlayCategory)
 
         self.symbolList: list[symbols.SymbolBase] = []
@@ -29,9 +30,9 @@ class FileBase(common.ElementBase):
         self.symbolsVRams: set[int] = set()
         "addresses of symbols in this section"
 
-        self.stringEncoding: str = common.GlobalConfig.DATA_STRING_ENCODING
+        self.stringEncoding: str = GlobalConfig.DATA_STRING_ENCODING
 
-        self.bytes: bytes = common.Utils.wordsToBytes(self.words)
+        self.bytes: bytes = Utils.wordsToBytes(self.words)
 
 
     def setCommentOffset(self, commentOffset: int):
@@ -42,30 +43,30 @@ class FileBase(common.ElementBase):
     def getAsmPrelude(self) -> str:
         output = ""
 
-        output += ".include \"macro.inc\"" + common.GlobalConfig.LINE_ENDS
-        output += common.GlobalConfig.LINE_ENDS
-        output += "/* assembler directives */" + common.GlobalConfig.LINE_ENDS
-        output += ".set noat      /* allow manual use of $at */" + common.GlobalConfig.LINE_ENDS
-        output += ".set noreorder /* do not insert nops after branches */" + common.GlobalConfig.LINE_ENDS
-        if common.GlobalConfig.ARCHLEVEL >= common.ArchLevel.MIPS3:
-            output += ".set gp=64     /* allow use of 64-bit general purpose registers */" + common.GlobalConfig.LINE_ENDS
-        output += common.GlobalConfig.LINE_ENDS
-        output += f".section {self.getSectionName()}" + common.GlobalConfig.LINE_ENDS
-        output += common.GlobalConfig.LINE_ENDS
-        output += ".align 4" + common.GlobalConfig.LINE_ENDS
+        output += ".include \"macro.inc\"" + GlobalConfig.LINE_ENDS
+        output += GlobalConfig.LINE_ENDS
+        output += "/* assembler directives */" + GlobalConfig.LINE_ENDS
+        output += ".set noat      /* allow manual use of $at */" + GlobalConfig.LINE_ENDS
+        output += ".set noreorder /* do not insert nops after branches */" + GlobalConfig.LINE_ENDS
+        if GlobalConfig.ARCHLEVEL >= ArchLevel.MIPS3:
+            output += ".set gp=64     /* allow use of 64-bit general purpose registers */" + GlobalConfig.LINE_ENDS
+        output += GlobalConfig.LINE_ENDS
+        output += f".section {self.getSectionName()}" + GlobalConfig.LINE_ENDS
+        output += GlobalConfig.LINE_ENDS
+        output += ".align 4" + GlobalConfig.LINE_ENDS
 
         return output
 
     def getHash(self) -> str:
-        buffer = common.Utils.wordsToBytes(self.words)
-        return common.Utils.getStrHash(buffer)
+        buffer = Utils.wordsToBytes(self.words)
+        return Utils.getStrHash(buffer)
 
 
     def checkAndCreateFirstSymbol(self) -> None:
         "Check if the very start of the file has a symbol and create it if it doesn't exist yet"
 
         currentVram = self.getVramOffset(0)
-        if self.sectionType == common.FileSectionType.Bss:
+        if self.sectionType == FileSectionType.Bss:
             currentVrom = None
         else:
             currentVrom = self.getVromOffset(0)
@@ -75,7 +76,7 @@ class FileBase(common.ElementBase):
 
 
     def printNewFileBoundaries(self):
-        if not common.GlobalConfig.PRINT_NEW_FILE_BOUNDARIES:
+        if not GlobalConfig.PRINT_NEW_FILE_BOUNDARIES:
             return
 
         if len(self.fileBoundaries) > 0:
@@ -144,13 +145,13 @@ class FileBase(common.ElementBase):
         return result
 
     def blankOutDifferences(self, other: FileBase) -> bool:
-        if not common.GlobalConfig.REMOVE_POINTERS:
+        if not GlobalConfig.REMOVE_POINTERS:
             return False
 
         return False
 
     def removePointers(self) -> bool:
-        if not common.GlobalConfig.REMOVE_POINTERS:
+        if not GlobalConfig.REMOVE_POINTERS:
             return False
 
         return False
@@ -165,13 +166,13 @@ class FileBase(common.ElementBase):
         for i, sym in enumerate(self.symbolList):
             output += sym.disassemble(migrate=migrate, useGlobalLabel=useGlobalLabel, isSplittedSymbol=False)
             if i + 1 < len(self.symbolList):
-                output += common.GlobalConfig.LINE_ENDS
+                output += GlobalConfig.LINE_ENDS
         return output
 
     def disassembleToFile(self, f: TextIO):
-        if common.GlobalConfig.ASM_USE_PRELUDE:
+        if GlobalConfig.ASM_USE_PRELUDE:
             f.write(self.getAsmPrelude())
-            f.write(common.GlobalConfig.LINE_ENDS)
+            f.write(GlobalConfig.LINE_ENDS)
         f.write(self.disassemble())
 
 
@@ -182,13 +183,13 @@ class FileBase(common.ElementBase):
         if filepath == "-":
             self.disassembleToFile(sys.stdout)
         else:
-            if common.GlobalConfig.WRITE_BINARY:
+            if GlobalConfig.WRITE_BINARY:
                 if self.sizew > 0:
-                    buffer = common.Utils.wordsToBytes(self.words)
-                    common.Utils.writeBytesToFile(Path(filepath + self.sectionType.toStr()), buffer)
+                    buffer = Utils.wordsToBytes(self.words)
+                    Utils.writeBytesToFile(Path(filepath + self.sectionType.toStr()), buffer)
             with open(filepath + self.sectionType.toStr() + ".s", "w", encoding="utf-8") as f:
                 self.disassembleToFile(f)
 
 
 def createEmptyFile() -> FileBase:
-    return FileBase(common.Context(), 0, 0, 0, "", [], common.FileSectionType.Unknown, 0, None)
+    return FileBase(Context(), 0, 0, 0, "", [], FileSectionType.Unknown, 0, None)

@@ -4,21 +4,22 @@
 # SPDX-License-Identifier: MIT
 
 from __future__ import annotations
+from typing import Final
 
 from .OrderedEnum import OrderedEnum
 
 
 class FileSectionType(OrderedEnum):
-    Dummy   = -4
-    End     = -3
-    Unknown = -2
-    Invalid = -1
+    Dummy: Final[int]   = -4
+    End: Final[int]     = -3
+    Unknown: Final[int] = -2
+    Invalid: Final[int] = -1
 
-    Text    = 1
-    Data    = 2
-    Rodata  = 3
-    Bss     = 4
-    Reloc   = 5
+    Text: Final[int]    = 1
+    Data: Final[int]    = 2
+    Rodata: Final[int]  = 3
+    Bss: Final[int]     = 4
+    Reloc: Final[int]   = 5
 
     @staticmethod
     def fromId(sectionId: int) -> FileSectionType:

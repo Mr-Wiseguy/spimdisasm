@@ -9,7 +9,8 @@ from typing import Callable
 
 from .. import common
 
-from .Elf32Constants import Elf32HeaderIdentifier, Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SectionHeaderFlag, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber
+from . import Elf32Constants
+from .Elf32Constants import Elf32ObjectFileType, Elf32HeaderFlag, Elf32SectionHeaderType, Elf32SectionHeaderFlag, Elf32SymbolTableType, Elf32SymbolTableBinding, Elf32SymbolVisibility, Elf32SectionHeaderNumber
 from .Elf32Dyns import Elf32Dyns
 from .Elf32GlobalOffsetTable import Elf32GlobalOffsetTable
 from .Elf32Header import Elf32Header
@@ -26,9 +27,9 @@ class Elf32File:
         # print(self.header)
 
         dataEncoding = self.header.ident.getDataEncoding()
-        if dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2MSB:
+        if dataEncoding == Elf32Constants.DataEncoding.DATA2MSB:
             common.GlobalConfig.ENDIAN = common.InputEndian.BIG
-        elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2LSB:
+        elif dataEncoding == Elf32Constants.DataEncoding.DATA2LSB:
             common.GlobalConfig.ENDIAN = common.InputEndian.LITTLE
 
         elfFlags, unknownElfFlags = Elf32HeaderFlag.parseFlags(self.header.flags)
@@ -382,11 +383,11 @@ class Elf32File:
 
         print(f"  {'Data:':<34} ", end="")
         dataEncoding = self.header.ident.getDataEncoding()
-        if dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATANONE:
+        if dataEncoding == Elf32Constants.DataEncoding.DATANONE:
             print("Invalid data encoding")
-        elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2LSB:
+        elif dataEncoding == Elf32Constants.DataEncoding.DATA2LSB:
             print("2's complement, little endian")
-        elif dataEncoding == Elf32HeaderIdentifier.DataEncoding.DATA2MSB:
+        elif dataEncoding == Elf32Constants.DataEncoding.DATA2MSB:
             print("2's complement, big endian")
         else:
             print(dataEncoding.name)
@@ -397,9 +398,9 @@ class Elf32File:
 
         print(f"  {'OS/ABI:':<34} ", end="")
         osAbi = self.header.ident.getOsAbi()
-        if osAbi == Elf32HeaderIdentifier.OsAbi.NONE:
+        if osAbi == Elf32Constants.OsAbi.NONE:
             print(f"UNIX - System V")
-        elif osAbi == Elf32HeaderIdentifier.OsAbi.IRIX:
+        elif osAbi == Elf32Constants.OsAbi.IRIX:
             print(f"SGI Irix")
         else:
             print(osAbi.name)
@@ -548,7 +549,7 @@ class Elf32File:
         for i, sym in enumerate(symbolTable.symbols):
             entryType = Elf32SymbolTableType(sym.stType)
 
-            bind = sym.stBind
+            bind = str(sym.stBind)
             stBind = Elf32SymbolTableBinding.fromValue(sym.stBind)
             if stBind is not None:
                 bind = stBind.name
@@ -589,7 +590,7 @@ class Elf32File:
             # Info column is basically useless since this shows the type and sym too
             print(f" {'Offset':8} {'Info':8} {'Type':12} {'Sym.Value':>9} {'Sym.Name'}")
             for rel in relSection.relocations:
-                relType = rel.rType
+                relType = str(rel.rType)
                 rType = common.RelocType.fromValue(rel.rType)
                 if rType is not None:
                     relType = rType.name

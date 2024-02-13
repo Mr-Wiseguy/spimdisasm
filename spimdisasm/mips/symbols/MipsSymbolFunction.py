@@ -157,7 +157,7 @@ class SymbolFunction(SymbolText):
             instructionOffset += 4
 
 
-    def _postProcessGotAccesses(self):
+    def _postProcessGotAccesses(self) -> None:
         if not common.GlobalConfig.PIC:
             return
 

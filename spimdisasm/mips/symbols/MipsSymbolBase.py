@@ -8,11 +8,12 @@ from __future__ import annotations
 from typing import Callable
 import rabbitizer
 
-from ... import common
+from ...common import *
+from ...common import Utils
 
 
-class SymbolBase(common.ElementBase):
-    def __init__(self, context: common.Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], sectionType: common.FileSectionType, segmentVromStart: int, overlayCategory: str|None):
+class SymbolBase(ElementBase):
+    def __init__(self, context: Context, vromStart: int, vromEnd: int, inFileOffset: int, vram: int, words: list[int], sectionType: FileSectionType, segmentVromStart: int, overlayCategory: str|None):
         super().__init__(context, vromStart, vromEnd, inFileOffset, vram, "", words, sectionType, segmentVromStart, overlayCategory)
 
         self.endOfLineComment: dict[int, str] = dict()
@@ -23,9 +24,9 @@ class SymbolBase(common.ElementBase):
         self.contextSym.isDefined = True
         self.contextSym.sectionType = self.sectionType
 
-        self.stringEncoding: str = common.GlobalConfig.DATA_STRING_ENCODING
+        self.stringEncoding: str = GlobalConfig.DATA_STRING_ENCODING
 
-        self.relocs: dict[int, common.RelocationInfo] = dict()
+        self.relocs: dict[int, RelocationInfo] = dict()
         "key: word offset"
 
 
@@ -38,10 +39,10 @@ class SymbolBase(common.ElementBase):
     def setNameIfUnset(self, name: str) -> None:
         self.contextSym.setNameIfUnset(name)
 
-    def setNameGetCallback(self, callback: Callable[[common.ContextSymbol], str]) -> None:
+    def setNameGetCallback(self, callback: Callable[[ContextSymbol], str]) -> None:
         self.contextSym.setNameGetCallback(callback)
 
-    def setNameGetCallbackIfUnset(self, callback: Callable[[common.ContextSymbol], str]) -> None:
+    def setNameGetCallbackIfUnset(self, callback: Callable[[ContextSymbol], str]) -> None:
         self.contextSym.setNameGetCallbackIfUnset(callback)
 
 
@@ -49,7 +50,7 @@ class SymbolBase(common.ElementBase):
         if self.contextSym.notAllowedToReferenceAddends:
             return False
 
-        if common.GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA:
+        if GlobalConfig.ALLOW_ALL_ADDENDS_ON_DATA:
             return True
 
         return self.contextSym.allowedToReferenceAddends
@@ -58,17 +59,17 @@ class SymbolBase(common.ElementBase):
         if self.contextSym.notAllowedToReferenceConstants:
             return False
 
-        if common.GlobalConfig.ALLOW_ALL_CONSTANTS_ON_DATA:
+        if GlobalConfig.ALLOW_ALL_CONSTANTS_ON_DATA:
             return True
 
         return self.contextSym.allowedToReferenceConstants
 
 
     def generateAsmLineComment(self, localOffset: int, wordValue: int|None=None, *, isDouble: bool=False) -> str:
-        if not common.GlobalConfig.ASM_COMMENT:
+        if not GlobalConfig.ASM_COMMENT:
             return ""
 
-        offsetHex = "{0:0{1}X}".format(localOffset + self.inFileOffset + self.commentOffset, common.GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
+        offsetHex = "{0:0{1}X}".format(localOffset + self.inFileOffset + self.commentOffset, GlobalConfig.ASM_COMMENT_OFFSET_WIDTH)
 
         currentVram = self.getVramOffset(localOffset)
         vramHex = f"{currentVram:08X}"
@@ -76,42 +77,42 @@ class SymbolBase(common.ElementBase):
         wordValueHex = ""
         if wordValue is not None:
             if isDouble:
-                wordValueHex = f"{common.Utils.qwordToCurrenEndian(wordValue):016X} "
+                wordValueHex = f"{Utils.qwordToCurrenEndian(wordValue):016X} "
             else:
-                wordValueHex = f"{common.Utils.wordToCurrenEndian(wordValue):08X} "
+                wordValueHex = f"{Utils.wordToCurrenEndian(wordValue):08X} "
 
         return f"/* {offsetHex} {vramHex} {wordValueHex}*/"
 
 
     def getSymbolAsmDeclaration(self, symName: str, useGlobalLabel: bool=True) -> str:
         if not useGlobalLabel:
-            return f"{symName}:" + common.GlobalConfig.LINE_ENDS
+            return f"{symName}:" + GlobalConfig.LINE_ENDS
 
         output = ""
         output += self.getLabelFromSymbol(self.contextSym, symName)
-        if self.sectionType == common.FileSectionType.Text:
-            if common.GlobalConfig.ASM_TEXT_ENT_LABEL:
-                output += f"{common.GlobalConfig.ASM_TEXT_ENT_LABEL} {symName}{common.GlobalConfig.LINE_ENDS}"
+        if self.sectionType == FileSectionType.Text:
+            if GlobalConfig.ASM_TEXT_ENT_LABEL:
+                output += f"{GlobalConfig.ASM_TEXT_ENT_LABEL} {symName}{GlobalConfig.LINE_ENDS}"
 
-            if common.GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
-                output += f"{symName}:{common.GlobalConfig.LINE_ENDS}"
+            if GlobalConfig.ASM_TEXT_FUNC_AS_LABEL:
+                output += f"{symName}:{GlobalConfig.LINE_ENDS}"
         else:
-            if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                output += f"{symName}:{common.GlobalConfig.LINE_ENDS}"
+            if GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+                output += f"{symName}:{GlobalConfig.LINE_ENDS}"
         return output
 
-    def getExtraLabelFromSymbol(self, contextSym: common.ContextSymbol|None) -> str:
+    def getExtraLabelFromSymbol(self, contextSym: ContextSymbol|None) -> str:
         label = ""
         if contextSym is not None:
-            label = common.GlobalConfig.LINE_ENDS
+            label = GlobalConfig.LINE_ENDS
             symLabel = contextSym.getLabelMacro(isInMiddleLabel=True)
             if symLabel is not None:
-                label += f"{symLabel} {contextSym.getName()}{common.GlobalConfig.LINE_ENDS}"
-                if common.GlobalConfig.ASM_DATA_SYM_AS_LABEL:
-                    label += f"{contextSym.getName()}:" + common.GlobalConfig.LINE_ENDS
+                label += f"{symLabel} {contextSym.getName()}{GlobalConfig.LINE_ENDS}"
+                if GlobalConfig.ASM_DATA_SYM_AS_LABEL:
+                    label += f"{contextSym.getName()}:" + GlobalConfig.LINE_ENDS
         return label
 
-    def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction|None) -> common.RelocationInfo | None:
+    def getReloc(self, wordOffset: int, instr: rabbitizer.Instruction|None) -> RelocationInfo | None:
         relocInfo = self.context.globalRelocationOverrides.get(self.getVromOffset(wordOffset))
 
         if relocInfo is None:
@@ -119,14 +120,14 @@ class SymbolBase(common.ElementBase):
 
         return relocInfo
 
-    def relocToInlineStr(self, relocInfo: common.RelocationInfo|None, isSplittedSymbol: bool=False) -> str:
+    def relocToInlineStr(self, relocInfo: RelocationInfo|None, isSplittedSymbol: bool=False) -> str:
         if relocInfo is None:
             return ""
         return relocInfo.getInlineStr(isSplittedSymbol=isSplittedSymbol)
 
     def getSizeDirective(self, symName: str) -> str:
-        if common.GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
-            return f".size {symName}, . - {symName}{common.GlobalConfig.LINE_ENDS}"
+        if GlobalConfig.ASM_EMIT_SIZE_DIRECTIVE:
+            return f".size {symName}, . - {symName}{GlobalConfig.LINE_ENDS}"
         return ""
 
     def isByte(self, index: int) -> bool:
@@ -193,7 +194,7 @@ class SymbolBase(common.ElementBase):
 
         isWordSized = not self.contextSym.isByte() and not self.contextSym.isShort()
 
-        if self.sectionType != common.FileSectionType.Bss:
+        if self.sectionType != FileSectionType.Bss:
             for i in range(0, self.sizew):
                 localOffset = 4*i
                 for j in range(0, 4):
@@ -221,7 +222,7 @@ class SymbolBase(common.ElementBase):
 
 
     def getEndOfLineComment(self, wordIndex: int) -> str:
-        if not common.GlobalConfig.ASM_COMMENT:
+        if not GlobalConfig.ASM_COMMENT:
             return ""
 
         return self.endOfLineComment.get(wordIndex, "")
@@ -233,7 +234,7 @@ class SymbolBase(common.ElementBase):
         dotType = ".byte"
 
         shiftValue = j * 8
-        if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
+        if GlobalConfig.ENDIAN == InputEndian.BIG:
             shiftValue = 24 - shiftValue
         subVal = (w & (0xFF << shiftValue)) >> shiftValue
         value = f"0x{subVal:02X}"
@@ -248,7 +249,7 @@ class SymbolBase(common.ElementBase):
         dotType = ".short"
 
         shiftValue = j * 8
-        if common.GlobalConfig.ENDIAN == common.InputEndian.BIG:
+        if GlobalConfig.ENDIAN == InputEndian.BIG:
             shiftValue = 16 - shiftValue
         subVal = (w & (0xFFFF << shiftValue)) >> shiftValue
         value = f"0x{subVal:04X}"
@@ -256,7 +257,7 @@ class SymbolBase(common.ElementBase):
         comment = self.generateAsmLineComment(localOffset+j)
         return f"{comment} {dotType} {value}"
 
-    def getNthWordAsBytesAndShorts(self, i: int, sym1: common.ContextSymbol|None, sym2: common.ContextSymbol|None, sym3: common.ContextSymbol|None, lastSymName: str) -> tuple[str, int]:
+    def getNthWordAsBytesAndShorts(self, i: int, sym1: ContextSymbol|None, sym2: ContextSymbol|None, sym3: ContextSymbol|None, lastSymName: str) -> tuple[str, int]:
         output = ""
 
         # Check the 4 bytes of this word to determine if each pair of bytes should be disassembled as `.short`s or a pair of `.byte`s
@@ -269,7 +270,7 @@ class SymbolBase(common.ElementBase):
             # Otherwise, disassemble as short
 
             output += self.getJByteAsByte(i, 0)
-            output += common.GlobalConfig.LINE_ENDS
+            output += GlobalConfig.LINE_ENDS
 
             if sym1 is not None:
                 output += self.getSizeDirective(lastSymName)
@@ -277,10 +278,10 @@ class SymbolBase(common.ElementBase):
 
             output += self.getExtraLabelFromSymbol(sym1)
             output += self.getJByteAsByte(i, 1)
-            output += common.GlobalConfig.LINE_ENDS
+            output += GlobalConfig.LINE_ENDS
         else:
             output += self.getJByteAsShort(i, 0)
-            output += common.GlobalConfig.LINE_ENDS
+            output += GlobalConfig.LINE_ENDS
 
         if sym2 is not None:
             output += self.getSizeDirective(lastSymName)
@@ -295,7 +296,7 @@ class SymbolBase(common.ElementBase):
             # Otherwise, disassemble as short
 
             output += self.getJByteAsByte(i, 2)
-            output += common.GlobalConfig.LINE_ENDS
+            output += GlobalConfig.LINE_ENDS
 
             if sym3 is not None:
                 output += self.getSizeDirective(lastSymName)
@@ -303,21 +304,21 @@ class SymbolBase(common.ElementBase):
 
             output += self.getExtraLabelFromSymbol(sym3)
             output += self.getJByteAsByte(i, 3)
-            output += common.GlobalConfig.LINE_ENDS
+            output += GlobalConfig.LINE_ENDS
         else:
             output += self.getJByteAsShort(i, 2)
-            output += common.GlobalConfig.LINE_ENDS
+            output += GlobalConfig.LINE_ENDS
 
         return output, 0
 
 
-    def _allowWordSymbolReference(self, symbolRef: common.ContextSymbol, word: int) -> bool:
+    def _allowWordSymbolReference(self, symbolRef: ContextSymbol, word: int) -> bool:
         if symbolRef.isElfNotype:
             return False
 
         symType = symbolRef.getTypeSpecial()
-        if isinstance(symType, common.SymbolSpecialType):
-            if symType == common.SymbolSpecialType.function:
+        if isinstance(symType, SymbolSpecialType):
+            if symType == SymbolSpecialType.function:
                 if word != symbolRef.vram:
                     # Avoid using addends on functions
                     return False
@@ -376,7 +377,7 @@ class SymbolBase(common.ElementBase):
         comment = self.generateAsmLineComment(localOffset)
         output += f"{label}{comment} {dotType} {value}"
         output += self.getEndOfLineComment(i)
-        output += common.GlobalConfig.LINE_ENDS
+        output += GlobalConfig.LINE_ENDS
 
         return output, 0
 
@@ -392,13 +393,13 @@ class SymbolBase(common.ElementBase):
             label = self.getExtraLabelFromSymbol(self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False))
 
         dotType = ".float"
-        floatValue = common.Utils.wordToFloat(w)
+        floatValue = Utils.wordToFloat(w)
         value = f"{floatValue:.10g}"
 
         comment = self.generateAsmLineComment(localOffset, w)
         output += f"{label}{comment} {dotType} {value}"
         output += self.getEndOfLineComment(i)
-        output += common.GlobalConfig.LINE_ENDS
+        output += GlobalConfig.LINE_ENDS
 
         return output, 0
 
@@ -414,27 +415,27 @@ class SymbolBase(common.ElementBase):
             label = self.getExtraLabelFromSymbol(self.getSymbol(currentVram, vromAddress=currentVrom, tryPlusOffset=False))
 
         dotType = ".double"
-        if common.GlobalConfig.ENDIAN == common.InputEndian.LITTLE:
+        if GlobalConfig.ENDIAN == InputEndian.LITTLE:
             otherHalf = self.words[i+1]
             doubleWord = (otherHalf << 32) | w
         else:
             otherHalf = self.words[i+1]
             doubleWord = (w << 32) | otherHalf
-        doubleValue = common.Utils.qwordToDouble(doubleWord)
+        doubleValue = Utils.qwordToDouble(doubleWord)
         value = f"{doubleValue:.18g}"
 
         comment = self.generateAsmLineComment(localOffset, doubleWord, isDouble=True)
         output += f"{label}{comment} {dotType} {value}"
         output += self.getEndOfLineComment(i)
-        output += common.GlobalConfig.LINE_ENDS
+        output += GlobalConfig.LINE_ENDS
 
         return output, 1
 
     def getNthWordAsString(self, i: int) -> tuple[str, int]:
         localOffset = 4*i
 
-        buffer = common.Utils.wordsToBytes(self.words)
-        decodedStrings, rawStringSize = common.Utils.decodeBytesToStrings(buffer, localOffset, self.stringEncoding)
+        buffer = Utils.wordsToBytes(self.words)
+        decodedStrings, rawStringSize = Utils.decodeBytesToStrings(buffer, localOffset, self.stringEncoding)
         if rawStringSize < 0:
             return "", -1
 
@@ -443,23 +444,23 @@ class SymbolBase(common.ElementBase):
         result = f"{comment} "
 
         commentPaddingNum = 22
-        if not common.GlobalConfig.ASM_COMMENT:
+        if not GlobalConfig.ASM_COMMENT:
             commentPaddingNum = 1
 
         if rawStringSize == 0:
             decodedStrings.append("")
         for decodedValue in decodedStrings[:-1]:
             result += f'.ascii "{decodedValue}"'
-            result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
-        result += f'.asciz "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
+            result += GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
+        result += f'.asciz "{decodedStrings[-1]}"{GlobalConfig.LINE_ENDS}'
 
         return result, skip
 
     def getNthWordAsPascalString(self, i: int) -> tuple[str, int]:
         localOffset = 4*i
 
-        buffer = common.Utils.wordsToBytes(self.words)
-        decodedStrings, rawStringSize = common.Utils.decodeBytesToPascalStrings(buffer, localOffset, self.stringEncoding, terminator=0x20)
+        buffer = Utils.wordsToBytes(self.words)
+        decodedStrings, rawStringSize = Utils.decodeBytesToPascalStrings(buffer, localOffset, self.stringEncoding, terminator=0x20)
         if rawStringSize < 0:
             return "", -1
 
@@ -468,15 +469,15 @@ class SymbolBase(common.ElementBase):
         result = f"{comment} "
 
         commentPaddingNum = 22
-        if not common.GlobalConfig.ASM_COMMENT:
+        if not GlobalConfig.ASM_COMMENT:
             commentPaddingNum = 1
 
         if rawStringSize == 0:
             decodedStrings.append("")
         for decodedValue in decodedStrings[:-1]:
             result += f'.ascii "{decodedValue}"'
-            result += common.GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
-        result += f'.ascii "{decodedStrings[-1]}"{common.GlobalConfig.LINE_ENDS}'
+            result += GlobalConfig.LINE_ENDS + (commentPaddingNum * " ")
+        result += f'.ascii "{decodedStrings[-1]}"{GlobalConfig.LINE_ENDS}'
 
         return result, skip
 
@@ -499,16 +500,16 @@ class SymbolBase(common.ElementBase):
             # If the symbol itself isn't already aligned to the desired alignment then the directive would break matching
             return ""
 
-        return f".align {shiftValue}{common.GlobalConfig.LINE_ENDS}"
+        return f".align {shiftValue}{GlobalConfig.LINE_ENDS}"
 
     def getPrevAlignDirective(self, i: int=0) -> str:
         if self.isDouble(i):
-            if common.GlobalConfig.COMPILER in {common.Compiler.SN64, common.Compiler.PSYQ}:
+            if GlobalConfig.COMPILER in {Compiler.SN64, Compiler.PSYQ}:
                 # This should be harmless in other compilers
                 # TODO: investigate if it is fine to use it unconditionally
                 return self._getAlignDirectiveStr(3)
         elif self.isJumpTable():
-            if i == 0 and common.GlobalConfig.COMPILER not in {common.Compiler.IDO, common.Compiler.PSYQ}:
+            if i == 0 and GlobalConfig.COMPILER not in {Compiler.IDO, Compiler.PSYQ}:
                 return self._getAlignDirectiveStr(3)
         elif self.isString() or self.isPascalString():
             return self._getAlignDirectiveStr(2)
@@ -574,7 +575,7 @@ class SymbolBase(common.ElementBase):
             if i != 0:
                 output += self.getPrevAlignDirective(i)
             output += data
-            if common.GlobalConfig.EMIT_INLINE_RELOC:
+            if GlobalConfig.EMIT_INLINE_RELOC:
                 relocInfo = self.getReloc(i*4, None)
                 output += self.relocToInlineStr(relocInfo, isSplittedSymbol)
             output += self.getPostAlignDirective(i)

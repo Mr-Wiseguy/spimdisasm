@@ -21,7 +21,7 @@ class RelocEntry:
         self.offset = entry & 0x00FFFFFF
 
     @property
-    def reloc(self):
+    def reloc(self) -> int:
         return (self.sectionId << 30) | (self.relocType << 24) | (self.offset)
 
     def getSectionType(self) -> common.FileSectionType:
@@ -87,7 +87,7 @@ class SectionRelocZ64(SectionBase):
         return self.sectionSizes[common.FileSectionType.Bss]
 
 
-    def analyze(self):
+    def analyze(self) -> None:
         localOffset = 0
 
         sym: symbols.SymbolBase
